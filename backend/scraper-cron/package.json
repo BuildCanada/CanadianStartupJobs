@@ -1,0 +1,19 @@
+{
+  "name": "canadian-startup-jobs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx index.ts"
+  },
+  "dependencies": {
+    "@mendable/firecrawl-js": "^4.6.2",
+    "@types/node": "^24.10.1",
+    "dotenv": "^17.2.3",
+    "openai": "^6.9.1",
+    "tsx": "^4.20.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

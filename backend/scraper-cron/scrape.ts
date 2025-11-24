@@ -1,9 +1,6 @@
-import { companyDirectoryUrls, jobBoardUrls } from "sources";
 import { firecrawl } from "./firecrawl";
 import { listingTool, openaiClient } from "./openaiClient";
 import type { ChatCompletion } from "openai/resources";
-import { z } from "zod";
-import fs from "fs";
 const schema = {
   type: "object",
   properties: {
@@ -137,17 +134,78 @@ export const recursiveLinkGathering = async (
     "Starting batch scrape for company directories...",
     companyDirsToSearch
   );
-  const scrapeResult = await firecrawl.batchScrape(companyDirsToSearch, {
+  const scrapeResults = await firecrawl.batchScrape(companyDirsToSearch, {
     options: {
       formats: [
         {
           type: "json",
-          schema: schema as any, // Firecrawl expects Record<string, unknown> but ZodObject works at runtime
+          schema: schema as any,
         },
       ],
     },
   });
+  for (const scrapeResult of scrapeResults.data) {
+    console.log("Scrape result received.", scrapeResult);
 
-  console.log("Scrape result new:", JSON.stringify(scrapeResult, null, 2));
-  fs.writeFileSync("scrapeResult.json", JSON.stringify(scrapeResult, null, 2));
+    const scrapeResultJobBoards = (scrapeResult.json as any)?.jobBoards || [];
+    allJobBoards.push(...scrapeResultJobBoards);
+    const scrapeResultCompanies = (scrapeResult.json as any)?.companies || [];
+    console.log(JSON.stringify(scrapeResult, null, 2), "Scraped job boards");
+    console.log(scrapeResultCompanies, "Scraped companies");
+    const scrapeResultCompanyDirs =
+      (scrapeResult.json as any)?.companyDirectories || [];
+    allCompanyDirs.push(...scrapeResultCompanyDirs);
+    for (const company of scrapeResultCompanies) {
+      console.log(
+        `Found company URL: ${company.url} checking for associated job boards...`
+      );
+      const buildPotentialJobBoardUrls = (company: { url: string }) => {
+        console.log(company.url, "Company URL");
+        const url = company.url;
+        const baseUrlDomain = new URL(url).hostname;
+        const baseUrlDomainWithoutTld = new URL(url).hostname.replace(
+          /\.[^/.]+$/,
+          ""
+        );
+        return [
+          `https://${baseUrlDomain}/en-ca/careers`,
+          `https://${baseUrlDomain}/en-ca/jobs`,
+          `https://${baseUrlDomain}/careers`,
+          `https://${baseUrlDomain}/jobs`,
+          `https://jobs.ashbyhq.com/${baseUrlDomainWithoutTld}`,
+          `https://${baseUrlDomainWithoutTld}.applytojob.com`,
+          `https://jobs.lever.co/${baseUrlDomainWithoutTld}`,
+        ];
+      };
+      const potentialJobBoardUrls = buildPotentialJobBoardUrls(company);
+      const potentialJobBoardUrlsValidated = [];
+      for (const url of potentialJobBoardUrls) {
+        const res = await fetch(url, { method: "HEAD" });
+
+        const checkRedirectsOnAts = async (response: Response) => {
+          if (response.redirected) {
+            if (
+              response.url.includes("jobs.lever.co") ||
+              response.url.includes("applytojob.com") ||
+              response.url.includes("ashbyhq.com") ||
+              response.url.includes("info.jazzhr.com")
+            ) {
+              return false;
+            }
+            return true;
+          }
+          return true;
+        };
+        const noRedirectsOnAts = await checkRedirectsOnAts(res);
+
+        if (res.ok && noRedirectsOnAts) {
+          potentialJobBoardUrlsValidated.push(res.url);
+        }
+      }
+      if (potentialJobBoardUrlsValidated.length > 0) {
+        allJobBoards.push(potentialJobBoardUrlsValidated[0]);
+      }
+    }
+  }
+  console.log("Completed scraping. Found totals:", allJobBoards);
 };

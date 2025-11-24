@@ -1,3 +1,4 @@
+import { mapCompanyDirs } from "scrape-helpers/scrapeCompanyDirs";
 import { firecrawl } from "./firecrawl";
 import { listingTool, openaiClient } from "./openaiClient";
 import type { ChatCompletion } from "openai/resources";
@@ -43,97 +44,25 @@ const schema = {
   required: ["jobBoards", "companies", "companyDirectories"],
 };
 
+// recursively gather links from company directories and job boards
+// for company directory scrape all links and categorize, then try to find company -> company job board from there
+// on each recursion pass directories and job boards to next recursion
+// return jobs from job boards found
 export const recursiveLinkGathering = async (
   companyDirsToSearch: string[],
   jobBoardsToSearch: string[],
-  allCompanyDirs: string[] = [],
-  allJobBoards: string[] = [],
   depth = 0
-) => {
+): Promise<{ title: string; pay: number }[]> => {
+  //const newCompanyDirs = [];
+  // const newJobBoards = [];
   let i = 0;
 
   // get all url associated with current company dirs to search, categorize as job board or company dir.
-  for (const url of companyDirsToSearch) {
-    if (i > 0) break;
-    i++;
-    const result = await firecrawl.map(url, {
-      limit: 50,
-      sitemap: "include",
-    });
-
-    const response = await openaiClient.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are an expert at extracting company names and descriptions from website content always use the listing tool to extract urls from user messages.",
-        },
-        {
-          role: "user",
-          content: `Extract the company names and descriptions from the following links:\n\n${result.links
-            .map(
-              (link) =>
-                ` ${link.url}
-                - ${link.title ?? "No Title"}: ${
-                  link.description ?? "No Description"
-                }`
-            )
-            .join("\n")}`,
-        },
-      ],
-      tools: [listingTool],
-      tool_choice: "required",
-    });
-
-    // Type guard to ensure it's a ChatCompletion (not a stream)
-    if (!("choices" in response)) {
-      console.error("Unexpected response type - expected ChatCompletion");
-      return;
-    }
-
-    const chatCompletion = response as ChatCompletion;
-
-    // Check if the response contains tool calls
-    const message = chatCompletion.choices[0]?.message;
-    const newCompanyDirs = [];
-    const newJobBoards = [];
-
-    if (message?.tool_calls && message.tool_calls.length > 0) {
-      // Prepare tool messages with function results
-      const toolCall = message.tool_calls[0];
-
-      // Type guard to check if it's a function tool call
-      if (toolCall.type === "function" && "function" in toolCall) {
-        const parsedArgs = JSON.parse(toolCall.function.arguments);
-        newCompanyDirs.push(...(parsedArgs.companyDirectories || []));
-        newJobBoards.push(...(parsedArgs.jobBoards || []));
-      }
-    }
-
-    for (const companyDir of newCompanyDirs) {
-      console.log(`Found company directory URL: ${companyDir}`);
-    }
-
-    allCompanyDirs.push(...newCompanyDirs);
-    allJobBoards.push(...newJobBoards);
-
-    if (depth < 2 && (newJobBoards.length > 0 || newCompanyDirs.length > 0)) {
-      console.log("Recursing to next depth:", depth + 1);
-      await recursiveLinkGathering(
-        newCompanyDirs,
-        newCompanyDirs,
-        allCompanyDirs,
-        allJobBoards,
-        depth + 1
-      );
-    }
-  }
-  // scrape company dirs for job boards and individual companies
-  console.log(
-    "Starting batch scrape for company directories...",
+  const { companyDirsCollected, jobBoardsCollected } = await mapCompanyDirs(
     companyDirsToSearch
   );
+  // scrape company dirs for job boards and individual companies
+
   const scrapeResults = await firecrawl.batchScrape(companyDirsToSearch, {
     options: {
       formats: [
@@ -145,22 +74,14 @@ export const recursiveLinkGathering = async (
     },
   });
   for (const scrapeResult of scrapeResults.data) {
-    console.log("Scrape result received.", scrapeResult);
-
     const scrapeResultJobBoards = (scrapeResult.json as any)?.jobBoards || [];
-    allJobBoards.push(...scrapeResultJobBoards);
+    newJobBoards.push(...scrapeResultJobBoards);
     const scrapeResultCompanies = (scrapeResult.json as any)?.companies || [];
-    console.log(JSON.stringify(scrapeResult, null, 2), "Scraped job boards");
-    console.log(scrapeResultCompanies, "Scraped companies");
     const scrapeResultCompanyDirs =
       (scrapeResult.json as any)?.companyDirectories || [];
-    allCompanyDirs.push(...scrapeResultCompanyDirs);
+    newCompanyDirs.push(...scrapeResultCompanyDirs);
     for (const company of scrapeResultCompanies) {
-      console.log(
-        `Found company URL: ${company.url} checking for associated job boards...`
-      );
       const buildPotentialJobBoardUrls = (company: { url: string }) => {
-        console.log(company.url, "Company URL");
         const url = company.url;
         const baseUrlDomain = new URL(url).hostname;
         const baseUrlDomainWithoutTld = new URL(url).hostname.replace(
@@ -203,9 +124,25 @@ export const recursiveLinkGathering = async (
         }
       }
       if (potentialJobBoardUrlsValidated.length > 0) {
-        allJobBoards.push(potentialJobBoardUrlsValidated[0]);
+        for (let i = 0; i < 3; i++) {
+          if (potentialJobBoardUrlsValidated[i]) {
+            newJobBoards.push(potentialJobBoardUrlsValidated[i]);
+          }
+        }
       }
     }
   }
-  console.log("Completed scraping. Found totals:", allJobBoards);
+
+  const newJobs: { title: string; pay: number }[] = [];
+  if (depth < 2 && (newJobBoards.length > 0 || newCompanyDirs.length > 0)) {
+    console.log("Recursing to next depth:", depth + 1);
+    const newRecursedJobs = await recursiveLinkGathering(
+      newCompanyDirs,
+      newJobBoards,
+      depth + 1
+    );
+    newJobs.push(...newRecursedJobs);
+  }
+
+  return newJobs;
 };

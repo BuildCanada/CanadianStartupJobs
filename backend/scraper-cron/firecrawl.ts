@@ -2,6 +2,48 @@ import Firecrawl from "@mendable/firecrawl-js";
 import dotenv from "dotenv";
 dotenv.config();
 
+export const schema = {
+  type: "object",
+  properties: {
+    jobBoards: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          jobBoardName: { type: "string" },
+          url: { type: "string" },
+        },
+        required: ["jobBoardName", "url"],
+      },
+    },
+    companies: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          companyName: { type: "string" },
+          url: { type: "string" },
+          isCanadian: { type: "boolean" },
+          isVcBacked: { type: "boolean" },
+        },
+        required: ["companyName", "url", "isCanadian", "isVcBacked"],
+      },
+    },
+    companyDirectories: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          directoryName: { type: "string" },
+          url: { type: "string" },
+        },
+        required: ["directoryName", "url"],
+      },
+    },
+  },
+  required: ["jobBoards", "companies", "companyDirectories"],
+};
+
 class FirecrawlWithOptionalMocks extends Firecrawl {
   override async batchScrape(
     urls: string[],

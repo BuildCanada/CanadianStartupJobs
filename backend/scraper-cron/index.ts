@@ -7,7 +7,5 @@ const listOfJobsBoards: string[] = [];
 const listOfCompanyDirs: string[] = [];
 recursiveLinkGathering(
   companyDirectoryUrls.slice(0, 1),
-  jobBoardUrls.slice(0, 1),
-  listOfCompanyDirs,
-  listOfJobsBoards
+  jobBoardUrls.slice(0, 1)
 );

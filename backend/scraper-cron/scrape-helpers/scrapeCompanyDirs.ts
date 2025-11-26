@@ -1,19 +1,25 @@
-import { firecrawl, schema } from "../firecrawl";
+import { firecrawl, schema, universalPaginationActions } from "../firecrawl";
 
 export const scrapeCompanyDirs = async (companyDirsToSearch: string[]) => {
   const companyDirsCollected = [];
   const jobBoardsCollected = [];
   let i = 0;
-  const scrapeResults = await firecrawl.batchScrape(companyDirsToSearch, {
-    options: {
+  const scrapeResults = { data: [] };
+
+  for (const dirUrl of companyDirsToSearch) {
+    const scrapeResult = await firecrawl.scrape(dirUrl, {
+      engine: "playwright",
+      waitUntil: "networkidle",
+      actions: universalPaginationActions,
       formats: [
         {
           type: "json",
-          schema: schema as any,
+          schema,
         },
       ],
-    },
-  });
+    });
+    scrapeResults.data.push(scrapeResult);
+  }
   for (const scrapeResult of scrapeResults.data) {
     const scrapeResultJobBoards = (scrapeResult.json as any)?.jobBoards || [];
     jobBoardsCollected.push(...scrapeResultJobBoards);

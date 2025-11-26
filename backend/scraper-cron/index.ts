@@ -5,7 +5,7 @@ import { jobBoardUrls, companyDirectoryUrls } from "./sources";
 console.log("This is the scraper cron index file.");
 const listOfJobsBoards: string[] = [];
 const listOfCompanyDirs: string[] = [];
-recursiveLinkGathering(
+const newJobs = recursiveLinkGathering(
   companyDirectoryUrls.slice(0, 1),
   jobBoardUrls.slice(0, 1)
 );

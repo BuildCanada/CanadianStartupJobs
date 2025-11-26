@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx index.ts"
+    "dev": "tsx index.ts",
+    "test": "tsx test.ts"
   },
   "dependencies": {
     "@mendable/firecrawl-js": "^4.6.2",

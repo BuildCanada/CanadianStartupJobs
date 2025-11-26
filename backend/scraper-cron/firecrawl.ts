@@ -1,4 +1,7 @@
-import Firecrawl from "@mendable/firecrawl-js";
+import Firecrawl, {
+  ActionOption,
+  FirecrawlClientOptions,
+} from "@mendable/firecrawl-js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -221,3 +224,40 @@ class FirecrawlWithOptionalMocks extends Firecrawl {
 export const firecrawl = new FirecrawlWithOptionalMocks({
   apiKey: process.env.FIRE_CRAWL_API_KEY!,
 });
+
+export const universalPaginationActions: ActionOption[] = [
+  // 1. Infinite Scroll Handler
+  {
+    type: "scroll",
+    direction: "down",
+    maxRepeats: 5,
+  },
+
+  // 2. Semantic Pagination Buttons ("see more", "load more", "next")
+  {
+    type: "click",
+    selector: "button, a",
+    maxRepeats: 5,
+  },
+
+  // 3. Numeric Pagination Buttons (1 2 3 4 ...)
+  {
+    type: "click",
+    maxRepeats: 5,
+    selector: "button, a",
+  },
+
+  // 4. rel="next" SEO Pagination
+  {
+    type: "click",
+    selector: "a[rel='next']",
+    maxRepeats: 5,
+  },
+
+  // 5. Auto-scroll again after clicking
+  {
+    type: "scroll",
+    direction: "down",
+    maxRepeats: 5,
+  },
+];

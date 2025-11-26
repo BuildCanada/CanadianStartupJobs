@@ -61,12 +61,17 @@ export const jobSchema = {
           salaryMin: { type: "number" },
           salaryMax: { type: "number" },
           description: { type: "string" },
+          company: { type: "string" },
+          jobBoardUrl: { type: "string" },
+          postingUrl: { type: "string" },
         },
         required: [
           "title",
           "location",
           "remoteOk",
           "description",
+          "company",
+
           // salaryMin and salaryMax intentionally omitted
         ],
       },

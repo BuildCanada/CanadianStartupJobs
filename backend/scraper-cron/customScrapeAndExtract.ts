@@ -2,12 +2,9 @@
 import { chromium, Browser, Page } from "playwright";
 import { NodeHtmlMarkdown } from "node-html-markdown";
 import OpenAI from "openai";
-import { writeFileSync } from "fs";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { openaiClient } from "openaiClient";
-import { parseDocument } from "htmlparser2";
-import { DomUtils } from "htmlparser2";
 dotenv.config();
 
 function isAppendStyle(snapshots: PageSnapshot[]): boolean {

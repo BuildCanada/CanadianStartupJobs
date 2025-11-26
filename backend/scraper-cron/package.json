@@ -10,7 +10,11 @@
     "@mendable/firecrawl-js": "^4.6.2",
     "@types/node": "^24.10.1",
     "dotenv": "^17.2.3",
+    "htmlparser2": "^10.0.0",
+    "jsdom": "^27.2.0",
+    "node-html-markdown": "^2.0.0",
     "openai": "^6.9.1",
+    "playwright": "^1.57.0",
     "redis": "^4.7.0",
     "tsx": "^4.20.6",
     "zod": "^4.1.12"

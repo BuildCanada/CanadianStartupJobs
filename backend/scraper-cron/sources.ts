@@ -29,7 +29,6 @@ export const companyDirectoryUrls = [
   "https://foresightcac.com/ventures/",
   "https://www.brampton.ca/EN/Business/BEC/Pages/Welcome.aspx",
 
-  /*
   "https://www.canstarthub.ca/discover",
   "https://canadastartups.co/",
   "https://growthlist.co/canada-startups/",
@@ -166,7 +165,5 @@ export const companyDirectoryUrls = [
   "https://cybersecurecatalyst.ca/catalyst-cyber-accelerator/",
   "https://bioenterprise.ca/member-directory/",
   "https://tbdc.com/",
-  "https://www.theforum.ca/"
-
-  */
+  "https://www.theforum.ca/",
 ];

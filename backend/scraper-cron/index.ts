@@ -1,47 +1,54 @@
 // will eventually boot cron job, currently just hitting the scraper directly
 
-import { firecrawl, jobSchema } from "firecrawl";
 import { writeFileSync } from "fs";
-import { getJobBoards } from "getJobBoards";
+import { mapCompanyDirQueue, closeAllQueues } from "queues";
 import { companyDirectoryUrls } from "sources";
-import { chunkStrings } from "utils";
+import { connectRedis } from "redisClient";
+import { WORKER_CONCURRENCY } from "./constants";
 
-// need to add chunking here
 const getAllJobs = async () => {
-  const allJobs = [];
-  const allJobBoardUrls = [];
-  for (const companyDirectory in companyDirectoryUrls.slice) {
-    const jobBoardsCollected = await getJobBoards(companyDirectory);
-    allJobBoardUrls.push(...jobBoardsCollected);
-  }
+  await connectRedis();
 
-  const chunkedJobBoardUrls = chunkStrings(allJobBoardUrls, 10);
+  // Initialize empty jobs file
+  writeFileSync("new_jobs.json", "[]");
 
-  for (const jobBoards of chunkedJobBoardUrls) {
-    const result = await firecrawl.batchScrape(jobBoards, {
-      options: {
-        formats: [{ type: "json", schema: jobSchema }],
-      },
-    });
+  // Add each initial company directory URL to the mapping queue
+  // Workers will map them in parallel and add discovered directories/job boards to other queues
+  const mapPromises = companyDirectoryUrls.map((url, index) =>
+    index < WORKER_CONCURRENCY.MAP_COMPANY_BREADTH ?
+    mapCompanyDirQueue.add("map-company-directory", { url })
+    : Promise.resolve()
+  );
 
-    const jobChunks = result.data.map((elem) => {
-      try {
-        const jobs = (elem.json as { jobs: { title: string }[] }).jobs;
-        return jobs;
-      } catch (err) {
-        console.log(err, elem.json);
-        return [] as unknown as {
-          title: string;
-        }[];
+  const results = await Promise.allSettled(mapPromises);
+  const succeeded = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+
+  console.log(`Added ${succeeded} URLs to mapping queue (${failed} failed)`);
+  console.log(`Workers will map them in parallel and discover directories/job boards.`);
+  
+  if (failed > 0) {
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          `Failed to add mapping job for ${companyDirectoryUrls[index]}:`,
+          result.reason
+        );
       }
     });
-
-    for (const jobChunk of jobChunks) {
-      allJobs.push(...jobChunk);
-    }
   }
+  
+  console.log("Jobs added to queue. Workers (running separately) will process them.");
+  console.log("Mapping workers will discover company directories and job boards, then add them to queues.");
+  console.log("Jobs are persisted in Redis and will survive server crashes.");
+  console.log("Make sure workers are running with: npm run worker");
 
-  writeFileSync("new_jobs.json", JSON.stringify(allJobs));
+  // Close queue connections and exit
+  // Workers run separately and will pick up jobs from Redis
+  await closeAllQueues();
 };
 
-getAllJobs();
+getAllJobs().catch((error) => {
+  console.error("Error in getAllJobs:", error);
+  process.exit(1);
+});

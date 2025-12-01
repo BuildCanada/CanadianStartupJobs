@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { openaiClient } from "openaiClient";
+import { boolean } from "zod";
 dotenv.config();
 
 function isAppendStyle(snapshots: PageSnapshot[]): boolean {
@@ -72,8 +73,7 @@ function mergeSnapshotsHeuristically(snapshots: PageSnapshot[]): string {
 interface Company {
   name: string;
   url: string;
-  isCanadian?: boolean;
-  isVcBacked?: boolean;
+  isStartup?: boolean;
 }
 
 interface CompanyDirectory {
@@ -351,10 +351,12 @@ const extractionTools: any[] = [
               properties: {
                 name: { type: "string" },
                 url: { type: "string" },
-                isCanadian: { type: "boolean" },
-                isVcBacked: { type: "boolean" },
+
+                isStartup: {
+                  type: "boolean",
+                },
               },
-              required: ["name", "url"],
+              required: ["name", "url", "isStartup"],
             },
           },
           companyDirectories: {
@@ -537,7 +539,7 @@ export const extractChunk = async (
         {
           role: "system",
           content:
-            "Extract all companies, job boards, and company directories from the following markdown.",
+            "Extract all companies, job boards, and company directories from the following markdown, only return job boards if they really look like job boards, and aren't just companies or lists of companies.",
         },
         { role: "user", content: markdownChunk },
       ],

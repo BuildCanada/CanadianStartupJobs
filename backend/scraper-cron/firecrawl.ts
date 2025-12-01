@@ -26,10 +26,9 @@ export const schema = {
         properties: {
           companyName: { type: "string" },
           url: { type: "string" },
-          isCanadian: { type: "boolean" },
-          isVcBacked: { type: "boolean" },
+          isStartup: { type: "boolean" },
         },
-        required: ["companyName", "url", "isCanadian", "isVcBacked"],
+        required: ["companyName", "url", "isCanadian"],
       },
     },
     companyDirectories: {
@@ -64,6 +63,7 @@ export const jobSchema = {
           company: { type: "string" },
           jobBoardUrl: { type: "string" },
           postingUrl: { type: "string" },
+          isAtAStartup: { type: "boolean" },
         },
         required: [
           "title",

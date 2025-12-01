@@ -19,7 +19,7 @@ export const companyDirectoryUrls = [
 
   // Master Lists
   "https://www.bycanada.tech/",
-
+/*
   "https://cswaccelerator.com/cohort-2-2/",
   "https://cswaccelerator.com/cohort1/",
   "https://www.ecommercenorth.ca/",
@@ -166,4 +166,4 @@ export const companyDirectoryUrls = [
   "https://bioenterprise.ca/member-directory/",
   "https://tbdc.com/",
   "https://www.theforum.ca/",
-];
+*/];

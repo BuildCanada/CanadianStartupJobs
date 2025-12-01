@@ -25,3 +25,11 @@ npm run dev
 ```
 
 Scrapes job boards from company directories and outputs to `new_jobs.json`.
+
+
+
+    parallelizaton/queueing
+    setting this up to run on a cron
+    working onfault tolerance
+    saving to jobs to the db
+    filtering jobs/companies being parsed - probably most important to make sure they are actually startups.

@@ -9,7 +9,7 @@ export const listingTool = {
   function: {
     name: "listing-extractor",
     description:
-      "Tool to best single url for finding a job board or company directory from a site map",
+      "Tool to get single url for finding a job board or company directory from a site map",
     parameters: {
       type: "object",
       properties: {
@@ -19,7 +19,7 @@ export const listingTool = {
             type: "string",
             format: "url",
           },
-          description: "A list of job board URLs.",
+          description: "A list of job board URLs. only show here if the url explicitly mentions job boards or career pages.",
         },
         companyDirectories: {
           type: "array",

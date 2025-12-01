@@ -746,7 +746,7 @@ Find alternatives to software &amp; products you use made right here in Canada. 
             currentUrl.search = currentParams.toString();
             window.top.history.pushState(null, '', currentUrl.toString());
         } catch (error) {
-            console.error("An error occurred while updating query parameters:", error);
+            // Error updating query parameters
         }
     });
 

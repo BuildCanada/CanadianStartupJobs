@@ -7,12 +7,11 @@ import { WORKER_CONCURRENCY } from "../constants";
 export const mapCompanyDirWorker = new Worker(
   "map-company-directories",
   async (job) => {
-    console.log(`Mapping company directory: ${job.data.url}`);
     try {
       // Call mapCompanyDir with a single URL array
       const { companyDirsCollectedByMap, jobBoardsCollectedByMap } =
         await mapCompanyDir([job.data.url]);
-      console.log("Found", companyDirsCollectedByMap, jobBoardsCollectedByMap);
+      console.log("Job boards from map", jobBoardsCollectedByMap, job.data.url);
       // Add discovered company directories to the scrape queue (depth 0)
       const dirPromises = companyDirsCollectedByMap.map((dirUrl, index) =>
         index < WORKER_CONCURRENCY.COMPANY_DIRECTORY_BREADTH
@@ -23,9 +22,6 @@ export const mapCompanyDirWorker = new Worker(
           : Promise.resolve()
       );
       await Promise.allSettled(dirPromises);
-      console.log(
-        `Added ${companyDirsCollectedByMap.length} company directories from ${job.data.url}`
-      );
 
       // Add discovered job boards to the job board queue
       const jobBoardPromises = jobBoardsCollectedByMap.map(
@@ -35,9 +31,6 @@ export const mapCompanyDirWorker = new Worker(
             : Promise.resolve()
       );
       await Promise.allSettled(jobBoardPromises);
-      console.log(
-        `Added ${jobBoardsCollectedByMap.length} job boards from ${job.data.url}`
-      );
 
       return {
         success: true,
@@ -46,7 +39,6 @@ export const mapCompanyDirWorker = new Worker(
         jobBoardsFound: jobBoardsCollectedByMap.length,
       };
     } catch (error) {
-      console.error(`Error mapping company directory ${job.data.url}:`, error);
       throw error;
     }
   },

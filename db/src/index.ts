@@ -4,7 +4,7 @@ import * as schema from "./schema/index.js";
 
 // Get database connection string from environment variables
 const connectionString = process.env.DATABASE_URL || 
-  `postgresql://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || "5432"}/${process.env.POSTGRES_DB || "canadian_startup_jobs"}`;
+  `postgresql://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || "5433"}/${process.env.POSTGRES_DB || "canadian_startup_db"}`;
 
 // Create postgres client
 const client = postgres(connectionString, {

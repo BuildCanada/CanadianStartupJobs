@@ -1,27 +1,28 @@
 import { firecrawl, jobSchema } from "firecrawl";
 
-export const scrapeJobsFromJobBoards = async (jobBoards: string[]) => {
-  const allJobs = [];
-  const result = await firecrawl.batchScrape(jobBoards, {
-    options: {
-      formats: [{ type: "json", schema: jobSchema }],
-    },
-  });
+export const scrapeJobsFromJobBoards = async (jobBoard: string) => {
+  try {
+    const result = await firecrawl.scrape(jobBoard, {
+      formats: [
+        {
+          type: "json",
+          schema: jobSchema,
+          prompt:
+            "If this is actually a job board with jobs on it for a startup company, return the jobs in the json format, otherwise return an empty array.",
+        },
+      ],
+    });
 
-  const jobChunks = result.data.map((elem) => {
-    try {
-      const jobs = (elem.json as { jobs: { title: string }[] }).jobs;
-      return jobs;
-    } catch (err) {
-      console.log(err, elem.json);
-      return [] as unknown as {
-        title: string;
-      }[];
+    // Firecrawl returns result with json property containing the parsed schema
+    if (result.json && typeof result.json === "object" && "jobs" in result.json) {
+      const jobs = (result.json as { jobs: any[] }).jobs;
+      // Return the jobs array directly, ensuring it's an array
+      return Array.isArray(jobs) ? jobs : [];
     }
-  });
 
-  for (const jobChunk of jobChunks) {
-    allJobs.push(...jobChunk);
+    return [];
+  } catch (error) {
+    // If scraping fails, return empty array
+    return [];
   }
-  return allJobs;
 };

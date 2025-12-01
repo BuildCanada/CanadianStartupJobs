@@ -38,11 +38,6 @@ app.get("/", (req, res) => {
 const PORT = process.env.BULL_BOARD_PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`BullMQ Board running at http://localhost:${PORT}/admin/queues`);
-  console.log(`\nAvailable queues:`);
-  console.log(`  - map-company-directories`);
-  console.log(`  - company-directories`);
-  console.log(`  - job-boards`);
-  console.log(`  - extract-jobs`);
+  // BullMQ Board running
 });
 

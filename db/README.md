@@ -1,5 +1,7 @@
 # @canadian-startup-jobs/db
 
+
+Currently skeleton - feel free to throw this out and create a new one.
 Database package for the Canadian Startup Jobs monorepo. This package provides a shared Drizzle ORM connection to PostgreSQL that can be used across multiple services.
 
 ## Installation

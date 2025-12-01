@@ -45,7 +45,7 @@ export const mapCompanyDir = async (
 
     // Type guard to ensure it's a ChatCompletion (not a stream)
     if (!("choices" in response)) {
-      console.error("Unexpected response type - expected ChatCompletion");
+      // Unexpected response type
     }
 
     const chatCompletion = response as ChatCompletion;
@@ -67,11 +67,10 @@ export const mapCompanyDir = async (
         }
         if (jobBoardsCollected.length > 0) {
           jobBoardsCollected.push(...(parsedArgs.jobBoards || []));
-        } else jobBoardsCollected.push(companyDirToSearch);
+        }
       }
     }
   }
-
   return {
     companyDirsCollectedByMap: companyDirsCollected,
     jobBoardsCollectedByMap: jobBoardsCollected,

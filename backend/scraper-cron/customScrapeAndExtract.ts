@@ -38,7 +38,6 @@ function mergeSnapshotsHeuristically(snapshots: PageSnapshot[]): string {
 
   // CASE 1 — Append-style pagination → last snapshot has everything
   if (isAppendStyle(snapshots)) {
-    console.log("📌 Append-style detected — using only final snapshot.");
     return snapshots[snapshots.length - 1].markdown.trim();
   }
 
@@ -249,7 +248,6 @@ const paginateAndSnapshot = async (
     if (html === lastHTML) {
       stableCount++;
       if (stableCount >= 3) {
-        console.log("🛑 Pagination ended: container stabilized.");
         break;
       }
     } else {
@@ -259,9 +257,6 @@ const paginateAndSnapshot = async (
 
     // ---- 3. Check timeout for this loop iteration ----
     if (Date.now() - iterationStart > 20_000) {
-      console.log(
-        "🛑 Pagination ended: 20-second timeout for iteration reached."
-      );
       break;
     }
 
@@ -270,7 +265,6 @@ const paginateAndSnapshot = async (
 
     const isVisible = await nextButton.isVisible().catch(() => false);
     if (!isVisible) {
-      console.log("🛑 Pagination ended: next button not visible.");
       break;
     }
 
@@ -279,7 +273,6 @@ const paginateAndSnapshot = async (
     const ariaDisabled = await nextButton.getAttribute("aria-disabled");
 
     if (isDisabled || ariaDisabled === "true") {
-      console.log("🛑 Pagination ended: button disabled.");
       break;
     }
 
@@ -304,7 +297,6 @@ const paginateAndSnapshot = async (
       .catch(() => false);
 
     if (!changed) {
-      console.log("🛑 Pagination ended: container did not change after click.");
       break;
     }
 
@@ -315,7 +307,6 @@ const paginateAndSnapshot = async (
 
     // ---- 9. Check if full iteration exceeded 20 sec ----
     if (Date.now() - iterationStart > 20_000) {
-      console.log("🛑 Pagination ended: iteration exceeded 20 seconds.");
       break;
     }
 
@@ -605,7 +596,6 @@ export const extractChunk = async (
       companyDirectories,
     };
   } catch (err) {
-    console.log("error", "markdown");
     return {
       companies: [],
       jobBoards: [],
@@ -625,7 +615,6 @@ export const scrapeAndExtract = async (
     await page.goto(scraperConfig.url, { waitUntil: "networkidle" });
 
     const snapshots = await paginateAndSnapshot(page, scraperConfig);
-    console.log("Number of snapshots", snapshots.length);
     const markdownCombined = mergeSnapshotsHeuristically(snapshots);
 
     const splitMarkDown = splitMarkdownByHeadings(markdownCombined, chunkChars);
@@ -638,7 +627,6 @@ export const scrapeAndExtract = async (
     for (const chunk of markdownChunks) {
       i++;
       const r = await extractChunk(openaiClient, chunk);
-      console.log("Getting partial results for chunk ", i);
       partialResults.push(r);
     }
 

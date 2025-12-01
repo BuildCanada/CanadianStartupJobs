@@ -9,14 +9,14 @@
 export const WORKER_CONCURRENCY = {
   /** Process only 1 job board at a time to respect Firecrawl rate limits */
   JOB_BOARD: 10,
-  JOB_BOARD_BREADTH: 10,
+  JOB_BOARD_BREADTH: 2,
   /** Process 3 job extractions at a time */
   /** Process 2 company directory mappings in parallel */
   MAP_COMPANY_DIR: 2,
-  MAP_COMPANY_BREADTH: 10,
+  MAP_COMPANY_BREADTH: 2,
   /** Process 2 company directories in parallel */
   COMPANY_DIRECTORY: 2,
-  COMPANY_DIRECTORY_BREADTH: 10,
+  COMPANY_DIRECTORY_BREADTH: 2,
 } as const;
 
 // ============================================================================

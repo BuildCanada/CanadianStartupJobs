@@ -8,7 +8,6 @@ const redisClient = createClient({
   socket: {
     reconnectStrategy: (retries: number) => {
       if (retries > 10) {
-        console.error("Redis connection failed after 10 retries");
         return new Error("Redis connection failed");
       }
       return Math.min(retries * 100, 3000);
@@ -17,19 +16,19 @@ const redisClient = createClient({
 });
 
 redisClient.on("error", (err: Error) => {
-  console.error("Redis Client Error:", err);
+  // Redis Client Error
 });
 
 redisClient.on("connect", () => {
-  console.log("Redis Client Connected");
+  // Redis Client Connected
 });
 
 redisClient.on("ready", () => {
-  console.log("Redis Client Ready");
+  // Redis Client Ready
 });
 
 redisClient.on("reconnecting", () => {
-  console.log("Redis Client Reconnecting");
+  // Redis Client Reconnecting
 });
 
 // Connect to Redis
@@ -39,7 +38,6 @@ export const connectRedis = async () => {
       await redisClient.connect();
     }
   } catch (error) {
-    console.error("Failed to connect to Redis:", error);
     throw error;
   }
 };
@@ -51,7 +49,6 @@ export const disconnectRedis = async () => {
       await redisClient.quit();
     }
   } catch (error) {
-    console.error("Failed to disconnect from Redis:", error);
     throw error;
   }
 };
@@ -66,7 +63,6 @@ export const redisHelpers = {
     try {
       return await redisClient.get(key);
     } catch (error) {
-      console.error(`Error getting key ${key}:`, error);
       throw error;
     }
   },
@@ -88,7 +84,6 @@ export const redisHelpers = {
       }
       return await redisClient.set(key, value);
     } catch (error) {
-      console.error(`Error setting key ${key}:`, error);
       throw error;
     }
   },
@@ -98,7 +93,6 @@ export const redisHelpers = {
     try {
       return await redisClient.del(key);
     } catch (error) {
-      console.error(`Error deleting key ${key}:`, error);
       throw error;
     }
   },
@@ -108,7 +102,6 @@ export const redisHelpers = {
     try {
       return await redisClient.exists(key);
     } catch (error) {
-      console.error(`Error checking existence of key ${key}:`, error);
       throw error;
     }
   },
@@ -118,7 +111,6 @@ export const redisHelpers = {
     try {
       return await redisClient.expire(key, seconds);
     } catch (error) {
-      console.error(`Error setting expiration on key ${key}:`, error);
       throw error;
     }
   },
@@ -128,7 +120,6 @@ export const redisHelpers = {
     try {
       return await redisClient.ttl(key);
     } catch (error) {
-      console.error(`Error getting TTL for key ${key}:`, error);
       throw error;
     }
   },
@@ -148,7 +139,6 @@ export const redisHelpers = {
         throw new Error("Invalid arguments for hSet");
       }
     } catch (error) {
-      console.error(`Error setting hash field ${key}:`, error);
       throw error;
     }
   },
@@ -158,7 +148,6 @@ export const redisHelpers = {
     try {
       return await redisClient.hGet(key, field);
     } catch (error) {
-      console.error(`Error getting hash field ${key}.${field}:`, error);
       throw error;
     }
   },
@@ -168,7 +157,6 @@ export const redisHelpers = {
     try {
       return await redisClient.hGetAll(key);
     } catch (error) {
-      console.error(`Error getting all hash fields for ${key}:`, error);
       throw error;
     }
   },
@@ -178,7 +166,6 @@ export const redisHelpers = {
     try {
       return await redisClient.sAdd(key, members);
     } catch (error) {
-      console.error(`Error adding to set ${key}:`, error);
       throw error;
     }
   },
@@ -188,7 +175,6 @@ export const redisHelpers = {
     try {
       return await redisClient.sIsMember(key, member);
     } catch (error) {
-      console.error(`Error checking set membership ${key}:`, error);
       throw error;
     }
   },
@@ -198,7 +184,6 @@ export const redisHelpers = {
     try {
       return await redisClient.sMembers(key);
     } catch (error) {
-      console.error(`Error getting set members ${key}:`, error);
       throw error;
     }
   },
@@ -208,7 +193,6 @@ export const redisHelpers = {
     try {
       return await redisClient.lPush(key, values);
     } catch (error) {
-      console.error(`Error pushing to list ${key}:`, error);
       throw error;
     }
   },
@@ -218,7 +202,6 @@ export const redisHelpers = {
     try {
       return await redisClient.rPush(key, values);
     } catch (error) {
-      console.error(`Error pushing to list ${key}:`, error);
       throw error;
     }
   },
@@ -228,7 +211,6 @@ export const redisHelpers = {
     try {
       return await redisClient.lPop(key);
     } catch (error) {
-      console.error(`Error popping from list ${key}:`, error);
       throw error;
     }
   },
@@ -238,7 +220,6 @@ export const redisHelpers = {
     try {
       return await redisClient.lLen(key);
     } catch (error) {
-      console.error(`Error getting list length ${key}:`, error);
       throw error;
     }
   },

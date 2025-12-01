@@ -13,8 +13,6 @@ dotenv.config();
 const clearQueues = async () => {
   await connectRedis();
 
-  console.log("Clearing all queues...");
-
   const queues = [
     { name: "map-company-directories", queue: mapCompanyDirQueue },
     { name: "company-directories", queue: companyDirectoryQueue },
@@ -35,22 +33,17 @@ const clearQueues = async () => {
       if (total > 0) {
         // Clear all job states
         await queue.obliterate({ force: true });
-        console.log(`✓ Cleared ${name}: ${total} jobs (${waiting} waiting, ${active} active, ${completed} completed, ${failed} failed, ${delayed} delayed)`);
-      } else {
-        console.log(`✓ ${name}: already empty`);
       }
     } catch (error) {
-      console.error(`✗ Error clearing ${name}:`, error);
+      // Error clearing queue
     }
   }
 
   await closeAllQueues();
-  console.log("\nAll queues cleared!");
   process.exit(0);
 };
 
 clearQueues().catch((error) => {
-  console.error("Error clearing queues:", error);
   process.exit(1);
 });
 

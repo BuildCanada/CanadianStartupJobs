@@ -25,14 +25,11 @@ type ScrapedJob = {
 export const jobBoardWorker = new Worker(
   "job-boards",
   async (job) => {
-    console.log(`Processing job board: ${job.data.url}`);
     try {
       // Scrape one job board at a time
-      const scrapedJobs = (await scrapeJobsFromJobBoards([
+      const scrapedJobs = (await scrapeJobsFromJobBoards(
         job.data.url,
-      ])) as ScrapedJob[];
-      console.log(`Found ${scrapedJobs.length} jobs from ${job.data.url}`);
-      console.log(JSON.stringify(scrapedJobs, null, 2));
+      )) as ScrapedJob[];
 
       if (scrapedJobs.length === 0) {
         return { success: true, url: job.data.url, jobsInserted: 0 };
@@ -84,10 +81,6 @@ export const jobBoardWorker = new Worker(
             }
           } catch (error) {
             // If query fails, assume job doesn't exist and will be inserted
-            console.warn(
-              `Error checking for existing job with URL ${jobData.postingUrl}:`,
-              error
-            );
           }
         }
 
@@ -119,10 +112,7 @@ export const jobBoardWorker = new Worker(
               .where(eq(jobs.postingUrl, jobData.postingUrl));
             updatedCount++;
           } catch (error) {
-            console.warn(
-              `Error updating job with URL ${jobData.postingUrl}:`,
-              error
-            );
+            // Error updating job
           }
         }
       }
@@ -133,10 +123,6 @@ export const jobBoardWorker = new Worker(
         insertedCount += jobsWithoutUrl.length;
       }
 
-      console.log(
-        `Upserted ${scrapedJobs.length} jobs: ${insertedCount} inserted, ${updatedCount} updated`
-      );
-
       return {
         success: true,
         url: job.data.url,
@@ -145,7 +131,6 @@ export const jobBoardWorker = new Worker(
         totalJobs: scrapedJobs.length,
       };
     } catch (error) {
-      console.error(`Error scraping job board ${job.data.url}:`, error);
       throw error;
     }
   },

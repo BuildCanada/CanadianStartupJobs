@@ -16,7 +16,11 @@ app.use("*", cors({
   credentials: true,
 }));
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
+  return c.json({
+    ok: true,
+    service: "canadian-startup-jobs-api",
+    routes: ["/jobs", "/tags", "/organizations/:id", "/sources/:id"],
+  });
 });
 app.route("/tags", tags);
 app.route("/jobs", jobs);

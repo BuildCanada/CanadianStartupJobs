@@ -3633,13 +3633,13 @@
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js": {
-      "bytes": 6244,
+    ".open-next/server-functions/default/.next/server/app/_not-found/page_client-reference-manifest.js": {
+      "bytes": 14460,
       "imports": [],
       "format": "cjs"
     },
-    ".open-next/server-functions/default/.next/server/app/_not-found/page_client-reference-manifest.js": {
-      "bytes": 14460,
+    ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js": {
+      "bytes": 6244,
       "imports": [],
       "format": "cjs"
     },
@@ -3682,14 +3682,14 @@
           "original": "D:\\Programming\\Projects\\CanadianStartupJobs\\src\\apps\\web\\.open-next\\server-functions\\default\\.next\\server\\app\\page_client-reference-manifest.js"
         },
         {
-          "path": ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js",
-          "kind": "require-call",
-          "original": "D:\\Programming\\Projects\\CanadianStartupJobs\\src\\apps\\web\\.open-next\\server-functions\\default\\.next\\server\\app\\_global-error\\page_client-reference-manifest.js"
-        },
-        {
           "path": ".open-next/server-functions/default/.next/server/app/_not-found/page_client-reference-manifest.js",
           "kind": "require-call",
           "original": "D:\\Programming\\Projects\\CanadianStartupJobs\\src\\apps\\web\\.open-next\\server-functions\\default\\.next\\server\\app\\_not-found\\page_client-reference-manifest.js"
+        },
+        {
+          "path": ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js",
+          "kind": "require-call",
+          "original": "D:\\Programming\\Projects\\CanadianStartupJobs\\src\\apps\\web\\.open-next\\server-functions\\default\\.next\\server\\app\\_global-error\\page_client-reference-manifest.js"
         },
         {
           "path": ".open-next/server-functions/default/.next/server/app/about/page_client-reference-manifest.js",
@@ -3831,7 +3831,7 @@
       "format": "cjs"
     },
     ".open-next/server-functions/default/.next/server/app/jobs/[id]/page.js": {
-      "bytes": 963,
+      "bytes": 1002,
       "imports": [
         {
           "path": ".open-next/server-functions/default/.next/server/chunks/ssr/[turbopack]_runtime.js",
@@ -6693,11 +6693,11 @@
         ".open-next/server-functions/default/.next/server/app/page_client-reference-manifest.js": {
           "bytesInOutput": 15217
         },
-        ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js": {
-          "bytesInOutput": 6008
-        },
         ".open-next/server-functions/default/.next/server/app/_not-found/page_client-reference-manifest.js": {
           "bytesInOutput": 13919
+        },
+        ".open-next/server-functions/default/.next/server/app/_global-error/page_client-reference-manifest.js": {
+          "bytesInOutput": 6008
         },
         ".open-next/server-functions/default/.next/server/app/about/page_client-reference-manifest.js": {
           "bytesInOutput": 13909
@@ -6727,7 +6727,7 @@
           "bytesInOutput": 449
         },
         ".open-next/server-functions/default/.next/server/app/jobs/[id]/page.js": {
-          "bytesInOutput": 1072
+          "bytesInOutput": 1111
         },
         ".open-next/server-functions/default/.next/server/app/page.js": {
           "bytesInOutput": 1042
@@ -6943,7 +6943,7 @@
           "bytesInOutput": 58676
         }
       },
-      "bytes": 2056632
+      "bytes": 2056671
     }
   }
 }

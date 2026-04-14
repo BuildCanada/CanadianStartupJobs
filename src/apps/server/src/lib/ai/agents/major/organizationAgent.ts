@@ -5,7 +5,7 @@ import { claudeMain } from "@/lib/ai/models";
 import { prompts } from '@/lib/ai/prompts';
 import { readPage, searchSite } from '@/lib/ai/tools';
 import { observePrepareSteps } from '@/lib/ai/observability';
-import { utils } from '@/lib/firecrawl';
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { orgTaggingAgent } from '@/lib/ai/agents/minor/orgTaggingAgent';
 import { hasLowSignalContent, isBlockedOrganizationUrl, isUnknownValue } from "@/lib/quality/content";
 import { upsertOrganization } from "@/lib/pipeline/organizations";
@@ -34,11 +34,11 @@ const getHomePage = async (url: string, preFetchedData?: z.infer<typeof preFetch
       };
     }
   }
-
-  const { markdown, links } = await utils.getMdAndLinks(url);
-  if (!markdown) throw new AppError(ERROR_CODES.FC_MARKDOWN_FAILED, `Failed to get markdown for ${url}`);
-  if (!links) throw new AppError(ERROR_CODES.FC_LINKS_FAILED, `Failed to get links for ${url}`);
-  return { markdown, links, source: 'live' as const, pulledAt: Date.now(), age: 0 };
+  return await fetchCachedPage({
+    url,
+    kind: "organization_home",
+    ttlMs: 24 * 60 * 60 * 1000,
+  });
 };
 
 const organizationAgentPayloadSchema = z.object({

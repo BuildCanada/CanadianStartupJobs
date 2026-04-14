@@ -1,11 +1,11 @@
 import { AppError, ERROR_CODES } from "@/lib/errors";
 import { generateObject } from "ai";
 import { claudeFast } from "@/lib/ai/models";
-import { utils } from "@/lib/firecrawl";
 import { hasForeignHeadquartersSignal, hasLowSignalContent, isBlockedJobUrl } from "@/lib/quality/content";
 import { detectAtsProvider, extractAtsJobLinks } from "@/lib/ats";
 import { markMissingJobsAsStale } from "@/lib/pipeline/jobs";
 import { getCanonicalPostingUrl, normalizeHttpUrl } from "@/lib/quality/urls";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { z } from "zod";
 import type { AgentHelpers, AgentResult } from "../helpers/types";
 import type { QueuedItem } from "@/lib/db/functions/queues";
@@ -92,10 +92,11 @@ const getCareersPage = async (url: string, preFetchedData?: z.infer<typeof preFe
     }
   }
 
-  const { markdown, links } = await utils.getMdAndLinks(url);
-  if (!markdown) throw new AppError(ERROR_CODES.FC_MARKDOWN_FAILED, `Failed to get markdown for ${url}`);
-  if (!links) throw new AppError(ERROR_CODES.FC_LINKS_FAILED, `Failed to get links for ${url}`);
-  return { markdown, links, source: 'live' as const, pulledAt: Date.now(), age: 0 };
+  return await fetchCachedPage({
+    url,
+    kind: "careers_page",
+    ttlMs: FRESHNESS_TTL_MS,
+  });
 };
 
 const getSecondaryBoardCandidates = (baseUrl: string, links: string[]) => {
@@ -162,14 +163,18 @@ const mergeJobEvaluations = (args: {
 
 const preFetchJobData = async (url: string) => {
   try {
-    const { markdown, links } = await utils.getMdAndLinks(url);
-    return {
-      url,
-      markdown: markdown || "",
-      links: links || [],
-      pulledAt: Date.now(),
-      freshTil: Date.now() + FRESHNESS_TTL_MS,
-    };
+      const doc = await fetchCachedPage({
+        url,
+        kind: "job_posting",
+        ttlMs: FRESHNESS_TTL_MS,
+      });
+      return {
+        url,
+        markdown: doc.markdown,
+        links: doc.links,
+        pulledAt: doc.pulledAt,
+        freshTil: doc.freshTil,
+      };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
     return {

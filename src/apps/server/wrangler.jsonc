@@ -12,7 +12,7 @@
     "ANTHROPIC_MAIN_MODEL": "claude-sonnet-4-6"
   },
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["*/2 * * * *"]
   },
   "d1_databases": [
     {

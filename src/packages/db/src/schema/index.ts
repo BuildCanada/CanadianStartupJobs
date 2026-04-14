@@ -35,6 +35,7 @@ import {
   portfolioCaches,
   sourcesPortfolioCaches,
 } from "./sources/index";
+import { pageCaches } from "./pages/index";
 import {
   calls, queues
 } from "./llm/index";
@@ -68,6 +69,7 @@ export {
   sources,
   portfolioCaches,
   sourcesPortfolioCaches,
+  pageCaches,
   calls,
   queues,
 };

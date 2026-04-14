@@ -18,9 +18,44 @@ import { z } from "zod";
 import { AppError, ERROR_CODES } from "@/lib/errors";
 
 const jsonbSchema = z.union([z.array(z.any()), z.any()]);
-const MAX_STRING_LENGTH = 4_000;
-const MAX_ARRAY_ITEMS = 50;
-const MAX_OBJECT_KEYS = 40;
+const MAX_STRING_LENGTH = 1_200;
+const MAX_ARRAY_ITEMS = 20;
+const MAX_OBJECT_KEYS = 20;
+const MAX_ERROR_STACK_LENGTH = 1_500;
+
+const compactErrorValue = (value: unknown) => {
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  const compacted: Record<string, unknown> = {};
+
+  if ("message" in record) {
+    compacted.message = sanitizeForStorage(record.message, 1);
+  }
+
+  if ("stack" in record && typeof record.stack === "string") {
+    compacted.stack =
+      record.stack.length <= MAX_ERROR_STACK_LENGTH
+        ? record.stack
+        : `${record.stack.slice(0, MAX_ERROR_STACK_LENGTH)}… [truncated ${record.stack.length - MAX_ERROR_STACK_LENGTH} chars]`;
+  }
+
+  if ("code" in record) {
+    compacted.code = sanitizeForStorage(record.code, 1);
+  }
+
+  if ("name" in record) {
+    compacted.name = sanitizeForStorage(record.name, 1);
+  }
+
+  if (Object.keys(compacted).length > 0) {
+    return compacted;
+  }
+
+  return value;
+};
 
 const sanitizeForStorage = (value: unknown, depth = 0): unknown => {
   if (value == null || typeof value === "number" || typeof value === "boolean") {
@@ -42,7 +77,7 @@ const sanitizeForStorage = (value: unknown, depth = 0): unknown => {
   if (Array.isArray(value)) {
     const sanitizedItems = value
       .slice(0, MAX_ARRAY_ITEMS)
-      .map((item) => sanitizeForStorage(item, depth + 1));
+      .map((item) => sanitizeForStorage(compactErrorValue(item), depth + 1));
 
     if (value.length > MAX_ARRAY_ITEMS) {
       sanitizedItems.push(`[truncated ${value.length - MAX_ARRAY_ITEMS} items]`);
@@ -110,7 +145,30 @@ const updateCall = async (args: UpdateCall) => {
   const result = sanitizeForStorage(args.result);
   const logs = sanitizeForStorage(args.logs);
   const errors = sanitizeForStorage(args.errors);
-  const response = await db.update(calls).set({ usage, result, logs, errors }).where(eq(calls.id, args.id)).returning();
+
+  let response;
+  try {
+    response = await db.update(calls).set({ usage, result, logs, errors }).where(eq(calls.id, args.id)).returning();
+  } catch (error) {
+    const fallbackErrors = sanitizeForStorage([
+      {
+        message: "Call update payload exceeded storage limits",
+        originalError: error instanceof Error ? error.message : String(error),
+      },
+    ]);
+
+    response = await db
+      .update(calls)
+      .set({
+        usage: [],
+        result: [],
+        logs: ["call update payload truncated due to storage limits"],
+        errors: fallbackErrors,
+      })
+      .where(eq(calls.id, args.id))
+      .returning();
+  }
+
   if (!response[0]) throw new AppError(ERROR_CODES.DB_QUERY_FAILED, "Failed to update ", {
     ...args
   });

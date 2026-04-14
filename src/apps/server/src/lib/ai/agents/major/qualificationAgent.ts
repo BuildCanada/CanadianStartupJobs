@@ -3,7 +3,7 @@ import { claudeMain } from "@/lib/ai/models";
 import { prompts } from "@/lib/ai/prompts";
 import { observePrepareSteps } from "@/lib/ai/observability";
 import { readPage, searchSite } from "@/lib/ai/tools";
-import { utils } from "@/lib/firecrawl";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { discoverCareersEndpoints } from "@/lib/discovery/careers";
 import {
   updateOrganizationCareersDiscovery,
@@ -53,12 +53,11 @@ const getHomePage = async (url: string, preFetchedData?: z.infer<typeof preFetch
     }
   }
 
-  const { markdown, links } = await utils.getMdAndLinks(url);
-  return {
-    markdown: markdown || "",
-    links: links || [],
-    source: "live" as const,
-  };
+  return await fetchCachedPage({
+    url,
+    kind: "organization_home",
+    ttlMs: 24 * 60 * 60 * 1000,
+  });
 };
 
 const getQualificationResearch = async (args: {

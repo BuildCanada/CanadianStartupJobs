@@ -5,7 +5,6 @@ import { claudeMain } from "@/lib/ai/models";
 import { prompts } from '@/lib/ai/prompts';
 import { readPage, searchSite } from '@/lib/ai/tools';
 import { observePrepareSteps } from '@/lib/ai/observability';
-import { utils } from '@/lib/firecrawl';
 import { jobTaggingAgent } from '@/lib/ai/agents/minor/jobTaggingAgent';
 import { sha256Hex } from "@/lib/hash";
 import {
@@ -30,6 +29,7 @@ import {
   upsertOrganization,
 } from "@/lib/pipeline/organizations";
 import { getCanonicalDomain } from "@/lib/quality/urls";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { z } from 'zod';
 import type { AgentHelpers, AgentResult } from "../helpers/types";
 import type { QueuedItem } from "@/lib/db/functions/queues";
@@ -56,10 +56,11 @@ const getJobPage = async (url: string, preFetchedData?: z.infer<typeof preFetche
     }
   }
 
-  const { markdown, links } = await utils.getMdAndLinks(url);
-  if (!markdown) throw new AppError(ERROR_CODES.FC_MARKDOWN_FAILED, `Failed to get markdown for ${url}`);
-  if (!links) throw new AppError(ERROR_CODES.FC_LINKS_FAILED, `Failed to get links for ${url}`);
-  return { markdown, links, source: 'live' as const, pulledAt: Date.now(), age: 0 };
+  return await fetchCachedPage({
+    url,
+    kind: "job_posting",
+    ttlMs: 7 * 24 * 60 * 60 * 1000,
+  });
 };
 
 const jobAgentPayloadSchema = z.object({
@@ -319,8 +320,8 @@ ${primaryData.text}`,
   return objectData.object;
 };
 
-const createJobCache = async (url: string, markdown: string) => {
-  const hash = await sha256Hex(markdown);
+const createJobCache = async (url: string, markdown: string, contentHash?: string | null) => {
+  const hash = contentHash ?? await sha256Hex(markdown);
   const now = Date.now();
   const args = schemas.jobCaches.insert.safeParse({
     url,
@@ -608,7 +609,7 @@ const jobAgent = async (
     logs.push(`Verified job ${newJob.id} is linked to organization ${hiringOrganization.organizationId}`);
 
     logs.push("Creating job cache...");
-    const jobCache = await createJobCache(payload.url, jobDoc.markdown);
+    const jobCache = await createJobCache(payload.url, jobDoc.markdown, jobDoc.contentHash);
     logs.push(`Created job cache: ${jobCache.id}`);
 
     logs.push("Connecting job to cache...");

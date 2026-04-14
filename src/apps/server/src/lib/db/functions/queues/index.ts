@@ -1,4 +1,4 @@
-import { eq, asc, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db, queues, schemas, sources } from "@/lib/db/runtime";
 import { z } from "zod";
 import { AppError, ERROR_CODES } from "@/lib/errors";
@@ -36,6 +36,23 @@ const getNextQueuedItem = async () => {
 
 const jsonbSchema = z.union([z.array(z.any()), z.any()]);
 
+const ACTIVE_QUEUE_STATUSES = ["queued", "in_progress"] as const;
+
+const stableStringify = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, nestedValue]) => `${JSON.stringify(key)}:${stableStringify(nestedValue)}`);
+    return `{${entries.join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+};
+
 const addToQueueSchema = z.object({
   payload: jsonbSchema,
   agent: z.string(),
@@ -46,6 +63,20 @@ type AddToQueueArgs = z.infer<typeof addToQueueSchema>;
 
 const addToQueue = async (args: AddToQueueArgs) => {
   const { payload, agent, maxRetries } = args;
+  const nextPayloadKey = stableStringify(payload);
+
+  const activeMatches = await db.select().from(queues).where(
+    and(
+      eq(queues.agent, agent),
+      inArray(queues.status, [...ACTIVE_QUEUE_STATUSES]),
+    ),
+  );
+
+  const existing = activeMatches.find((item) => stableStringify(item.payload) === nextPayloadKey);
+  if (existing) {
+    return existing;
+  }
+
   const uploadValues = {
     payload,
     agent,

@@ -66,6 +66,18 @@ app.get("/pipeline/status", async (c) => {
         c.get("db").$count(organizations),
         c.get("db").$count(organizationSeeds),
       ]);
+      const queueRows = await c.get("db").select({
+        agent: queues.agent,
+        status: queues.status,
+      }).from(queues);
+      const queueByAgent = queueRows.reduce<Record<string, number>>((acc, row) => {
+        acc[row.agent] = (acc[row.agent] ?? 0) + 1;
+        return acc;
+      }, {});
+      const queueByStatus = queueRows.reduce<Record<string, number>>((acc, row) => {
+        acc[row.status] = (acc[row.status] ?? 0) + 1;
+        return acc;
+      }, {});
 
       return c.json({
         ok: true,
@@ -75,6 +87,10 @@ app.get("/pipeline/status", async (c) => {
           sources: sourceCount,
           organizations: organizationCount,
           organizationSeeds: organizationSeedCount,
+        },
+        queue: {
+          byAgent: queueByAgent,
+          byStatus: queueByStatus,
         },
       });
     },

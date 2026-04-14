@@ -1,5 +1,6 @@
 import { detectAtsProvider, extractAtsJobLinks, type AtsProvider } from "@/lib/ats";
 import { utils } from "@/lib/firecrawl";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { hasLowSignalContent, isBlockedOrganizationUrl } from "@/lib/quality/content";
 import { getCanonicalHostname, normalizeHttpUrl } from "@/lib/quality/urls";
 
@@ -279,9 +280,13 @@ const scoreValidatedCandidate = (args: {
 
 const validateCandidate = async (candidate: CareersCandidate): Promise<ValidatedCareersCandidate> => {
   try {
-    const { markdown, links } = await utils.getMdAndLinks(candidate.url);
-    const safeMarkdown = markdown ?? "";
-    const safeLinks = links ?? [];
+    const doc = await fetchCachedPage({
+      url: candidate.url,
+      kind: "careers_page",
+      ttlMs: 24 * 60 * 60 * 1000,
+    });
+    const safeMarkdown = doc.markdown ?? "";
+    const safeLinks = doc.links ?? [];
 
     if (!safeMarkdown || hasLowSignalContent(safeMarkdown)) {
       return {

@@ -1,5 +1,5 @@
 import { addToQueue } from "@/lib/db/functions/queues";
-import { db, jobs, organizationSeeds, organizations, queues, sources } from "@/lib/db/runtime";
+import { db, jobs, organizationSeeds, organizations, orgsJobs, queues, sources } from "@/lib/db/runtime";
 import { DEFAULT_ORGANIZATIONS } from "./defaultOrganizations";
 import { DEFAULT_SOURCES } from "./defaultSources";
 import { getCanonicalDomain, normalizeHttpUrl, normalizeSourceUrl } from "@/lib/quality/urls";
@@ -10,6 +10,8 @@ type SeedOptions = {
 
 const ORGANIZATION_SEED_BATCH_SIZE = 30;
 const SOURCE_SEED_BATCH_SIZE = 6;
+const QUALIFIED_JOBBOARD_BACKFILL_BATCH_SIZE = 20;
+const MAX_QUEUE_BACKLOG_BEFORE_SEEDING = 150;
 
 const getQueuedOrganizationUrls = (items: Array<{
   agent: string;
@@ -78,6 +80,18 @@ export const seedDefaultOrganizations = async (options: SeedOptions = {}) => {
     });
     existingSeedKeys.add(matchingKey);
     insertedSeeds += 1;
+  }
+
+  if (!options.force && queuedCount >= MAX_QUEUE_BACKLOG_BEFORE_SEEDING) {
+    return {
+      seeded: insertedSeeds,
+      totalSeeds: DEFAULT_ORGANIZATIONS.length,
+      queued: 0,
+      queuedCount,
+      jobCount,
+      queueItems: [],
+      reason: "queue-backlog-too-high",
+    };
   }
 
   const activeQueueItems = existingQueueItems.filter(
@@ -177,6 +191,68 @@ export const seedDefaultOrganizations = async (options: SeedOptions = {}) => {
     }
   }
 
+  const activeJobBoardQueueKeys = new Set(
+    activeQueueItems.flatMap((item) => {
+      if (item.agent !== "jobBoardAgent") {
+        return [];
+      }
+
+      const payload = item.payload as { organizationId?: number; careersUrl?: string } | null;
+      return [
+        payload?.organizationId ? `org:${payload.organizationId}` : null,
+        payload?.careersUrl ? `careers:${normalizeHttpUrl(payload.careersUrl)}` : null,
+      ].filter(Boolean) as string[];
+    }),
+  );
+
+  const currentOrganizations = await db.select({
+    id: organizations.id,
+    name: organizations.name,
+    careersPage: organizations.careersPage,
+    qualificationStatus: organizations.qualificationStatus,
+  }).from(organizations);
+
+  const orgJobLinks = await db.select({
+    orgId: orgsJobs.orgId,
+  }).from(orgsJobs);
+  const orgIdsWithJobs = new Set(orgJobLinks.map((row) => row.orgId));
+
+  const qualifiedWithoutJobs = currentOrganizations
+    .filter((organization) =>
+      organization.qualificationStatus === "qualified"
+      && organization.careersPage
+      && !orgIdsWithJobs.has(organization.id)
+      && !activeJobBoardQueueKeys.has(`org:${organization.id}`)
+      && !activeJobBoardQueueKeys.has(`careers:${normalizeHttpUrl(organization.careersPage)}`)
+    )
+    .slice(0, QUALIFIED_JOBBOARD_BACKFILL_BATCH_SIZE);
+
+  for (const organization of qualifiedWithoutJobs) {
+    const normalizedCareers = normalizeHttpUrl(organization.careersPage ?? "");
+    if (!normalizedCareers) {
+      continue;
+    }
+
+    const queuedItem = await addToQueue({
+      payload: {
+        organizationId: organization.id,
+        careersUrl: normalizedCareers,
+        companyName: organization.name,
+      },
+      agent: "jobBoardAgent",
+      maxRetries: 3,
+    });
+
+    queued.push({
+      id: queuedItem.id,
+      organization: organization.name,
+      action: "jobBoardAgent",
+    });
+
+    activeJobBoardQueueKeys.add(`org:${organization.id}`);
+    activeJobBoardQueueKeys.add(`careers:${normalizedCareers}`);
+  }
+
   return {
     seeded: insertedSeeds,
     totalSeeds: DEFAULT_ORGANIZATIONS.length,
@@ -211,6 +287,20 @@ export const seedDefaultSources = async (options: SeedOptions = {}) => {
   const activeSourceQueueItems = existingQueueItems.filter(
     (item) => item.agent === "sourceAgent" && (item.status === "queued" || item.status === "in_progress"),
   );
+
+  if (!options.force && queuedCount >= MAX_QUEUE_BACKLOG_BEFORE_SEEDING) {
+    return {
+      seeded: 0,
+      skipped: DEFAULT_SOURCES.length,
+      reason: "queue-backlog-too-high",
+      queuedCount,
+      jobCount,
+      activeSourceQueueCount: activeSourceQueueItems.length,
+      remainingSources: DEFAULT_SOURCES.length,
+      queued: [],
+    };
+  }
+
   const queuedSourceKeys = new Set(
     activeSourceQueueItems.flatMap((item) => {
       const payload = item.payload as { home?: string; portfolio?: string } | null;

@@ -3,19 +3,24 @@ import { generateObject } from "ai";
 import { db, schemas, sources, portfolioCaches, sourcesPortfolioCaches } from "@/lib/db/runtime";
 import { claudeFast } from "@/lib/ai/models";
 import { prompts } from '@/lib/ai/prompts';
-import { firecrawl } from "@/lib/firecrawl";
-import { sha256Hex } from "@/lib/hash";
 import { normalizeSourceUrl } from "@/lib/quality/urls";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { eq, or } from "drizzle-orm";
 import z from "zod";
 import type { AgentHelpers, AgentResult } from "../helpers/types";
 import type { QueuedItem } from "@/lib/db/functions/queues";
 
 const getDoc = async (page: string) => {
-  const { markdown, links } = await firecrawl.scrape(page, { formats: ["markdown", "links"] });
-  if (!markdown) throw new AppError(ERROR_CODES.FC_MARKDOWN_FAILED, "Failed to get markdown in sourceAgent", { page });
-  if (!links) throw new AppError(ERROR_CODES.FC_LINKS_FAILED, "Failed to get links in sourceAgent", { page });
-  return { markdown, links };
+  const kind = page.toLowerCase().includes("/portfolio") || page.toLowerCase().includes("/companies")
+    ? "source_portfolio"
+    : "source_home";
+  const doc = await fetchCachedPage({
+    url: page,
+    kind,
+    ttlMs: 7 * 24 * 60 * 60 * 1000,
+  });
+  if (!doc.markdown) throw new AppError(ERROR_CODES.FC_MARKDOWN_FAILED, "Failed to get markdown in sourceAgent", { page });
+  return { markdown: doc.markdown, links: doc.links, contentHash: doc.contentHash };
 };
 
 const sourceAgentPayloadSchema = z.object({
@@ -103,14 +108,12 @@ const createNewSourceFromMarkdown = async (
   return newSource[0];
 };
 
-const createNewPortfolioCache = async (url: string) => {
-  const htmlPayload = await fetch(url);
-  const hash = await sha256Hex(await htmlPayload.arrayBuffer());
+const createNewPortfolioCache = async (url: string, hash?: string | null) => {
   const now = Date.now();
   const args = schemas.portfolioCaches.insert.safeParse({
     url,
     freshTil: now + (7 * 24 * 60 * 60 * 1000),
-    lastHash: hash,
+    lastHash: hash ?? null,
   });
   if (args.error) throw new AppError(ERROR_CODES.SCHEMA_PARSE_FAILED, "Failed to parse portfolio cache arguments", { ...args.error });
   const newPortfolio = await db.insert(portfolioCaches).values(args.data).returning();
@@ -232,7 +235,7 @@ const sourceAgent = async (
       }
 
       logs.push("Creating portfolio cache...");
-      portfolioCache = await createNewPortfolioCache(discoveredPortfolio.url);
+      portfolioCache = await createNewPortfolioCache(discoveredPortfolio.url, portfolioDoc.contentHash);
       logs.push(`Created portfolio cache: ${portfolioCache.id}`);
 
       logs.push("Connecting source to portfolio cache...");

@@ -60,7 +60,7 @@ export default {
       async () => {
         await seedDefaultOrganizations();
         await seedDefaultSources();
-        await processQueueBatch({ maxItems: 20, maxDurationMs: 25_000 });
+        await processQueueBatch({ maxItems: 80, maxDurationMs: 55_000, maxHeavyItems: 6 });
       },
     );
   },

@@ -27,6 +27,7 @@ import {
   sources,
   portfolioCaches,
   sourcesPortfolioCaches,
+  pageCaches,
   calls,
   queues
 } from "./schema/index";
@@ -173,6 +174,11 @@ const schemas = {
     insert: createInsertSchema(sourcesPortfolioCaches),
     update: createUpdateSchema(sourcesPortfolioCaches),
   },
+  pageCaches: {
+    select: createSelectSchema(pageCaches),
+    insert: createInsertSchema(pageCaches),
+    update: createUpdateSchema(pageCaches),
+  },
   calls: {
     select: createSelectSchema(calls),
     insert: createInsertSchema(calls),
@@ -212,6 +218,7 @@ const schema = {
   sources,
   portfolioCaches,
   sourcesPortfolioCaches,
+  pageCaches,
   calls,
   queues,
 };
@@ -250,6 +257,7 @@ export {
   sources,
   portfolioCaches,
   sourcesPortfolioCaches,
+  pageCaches,
   calls,
   queues
 };

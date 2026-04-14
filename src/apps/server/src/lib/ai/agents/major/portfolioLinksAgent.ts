@@ -1,7 +1,7 @@
 import { AppError, ERROR_CODES } from "@/lib/errors";
 import { generateObject } from "ai";
 import { claudeFast } from "@/lib/ai/models";
-import { utils } from "@/lib/firecrawl";
+import { fetchCachedPage } from "@/lib/cache/pages";
 import { hasLowSignalContent, isBlockedOrganizationUrl, isSameHost } from "@/lib/quality/content";
 import { z } from "zod";
 import type { AgentHelpers, AgentResult } from "../helpers/types";
@@ -95,8 +95,12 @@ const getLinksFromSeedUrls = async (seedUrls: string[]) => {
 
   for (const seedUrl of seedUrls) {
     try {
-      const { links } = await utils.getMdAndLinks(seedUrl);
-      for (const link of links ?? []) {
+      const doc = await fetchCachedPage({
+        url: seedUrl,
+        kind: "portfolio_seed",
+        ttlMs: FRESHNESS_TTL_MS,
+      });
+      for (const link of doc.links ?? []) {
         aggregatedLinks.add(link);
       }
     } catch {
@@ -130,8 +134,12 @@ const isLikelyInternalPortfolioDetailLink = (candidateUrl: string, sourceWebsite
 
 const getExternalLinksFromInternalDetailPage = async (url: string, sourceWebsite?: string) => {
   try {
-    const { links } = await utils.getMdAndLinks(url);
-    return [...new Set(links)].filter((link) =>
+    const doc = await fetchCachedPage({
+      url,
+      kind: "portfolio_detail",
+      ttlMs: FRESHNESS_TTL_MS,
+    });
+    return [...new Set(doc.links)].filter((link) =>
       !isBlockedOrganizationUrl(link) && !isSameHost(link, sourceWebsite),
     );
   } catch {
@@ -141,13 +149,17 @@ const getExternalLinksFromInternalDetailPage = async (url: string, sourceWebsite
 
 const preFetchCompanyData = async (url: string) => {
   try {
-    const { markdown, links } = await utils.getMdAndLinks(url);
+    const doc = await fetchCachedPage({
+      url,
+      kind: "organization_home",
+      ttlMs: FRESHNESS_TTL_MS,
+    });
     return {
       url,
-      markdown: markdown || "",
-      links: links || [],
-      pulledAt: Date.now(),
-      freshTil: Date.now() + FRESHNESS_TTL_MS,
+      markdown: doc.markdown,
+      links: doc.links,
+      pulledAt: doc.pulledAt,
+      freshTil: doc.freshTil,
     };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);

@@ -146,10 +146,10 @@ export const processNextQueuedItem = async () => {
       };
     }
 
-    await updateStatus({ id: queuedItem.id, status: "failed" });
+    const shouldRetry = await handleRetry(queuedItem);
 
     return {
-      status: "failed" as const,
+      status: shouldRetry ? "retrying" as const : "failed" as const,
       queueId: queuedItem.id,
       agent: queuedItem.agent,
       reason: err instanceof Error ? err.message : "unknown-error",

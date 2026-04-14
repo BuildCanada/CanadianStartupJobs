@@ -38,6 +38,9 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.2.1"
   },
+  "optionalDependencies": {
+    "@ast-grep/napi-linux-x64-gnu": "0.40.5"
+  },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.18.0",
     "@tailwindcss/postcss": "^4.1.17",

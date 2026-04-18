@@ -1,0 +1,37 @@
+{
+  "name": "canadian-startup-jobs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx index.ts",
+    "test": "tsx test.ts",
+    "worker": "tsx workers/workers.ts",
+    "test-bullmq": "tsx test-bullmq.ts",
+    "clear-queues": "tsx clear-queues.ts",
+    "board": "tsx bull-board-server.ts"
+  },
+  "dependencies": {
+    "@bull-board/api": "^6.14.2",
+    "@bull-board/express": "^6.14.2",
+    "@canadian-startup-jobs/db": "file:../../db",
+    "@mendable/firecrawl-js": "^4.6.2",
+    "drizzle-orm": "^0.36.4",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.1",
+    "bullmq": "^5.65.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "htmlparser2": "^10.0.0",
+    "jsdom": "^27.2.0",
+    "node-html-markdown": "^2.0.0",
+    "openai": "^6.9.1",
+    "playwright": "^1.57.0",
+    "redis": "^4.7.0",
+    "tsx": "^4.20.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@10.11.1+sha512.e519b9f7639869dc8d5c3c5dfef73b3f091094b0a006d7317353c72b124e80e1afd429732e28705ad6bfa1ee879c1fce46c128ccebd3192101f43dd67c667912"
+}
